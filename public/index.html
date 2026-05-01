@@ -1,0 +1,1050 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sambung Kata — Game Real-Time</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0d0f14;
+        --surface: #161a23;
+        --surface2: #1e2430;
+        --border: #2a3040;
+        --accent: #f5c542;
+        --accent2: #ff6b6b;
+        --green: #4ecb71;
+        --blue: #5b9cf6;
+        --text: #e8ecf0;
+        --muted: #7a8494;
+        --radius: 12px;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Space Mono", monospace;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+      }
+
+      header {
+        text-align: center;
+        padding: 24px 0 16px;
+      }
+
+      header h1 {
+        font-family: "Syne", sans-serif;
+        font-size: 2.4rem;
+        font-weight: 800;
+        letter-spacing: -1px;
+      }
+
+      header h1 span {
+        color: var(--accent);
+      }
+
+      header p {
+        color: var(--muted);
+        font-size: 0.8rem;
+        margin-top: 4px;
+      }
+
+      .conn-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.72rem;
+        padding: 4px 12px;
+        border-radius: 99px;
+        margin-top: 10px;
+        border: 1px solid var(--border);
+        color: var(--muted);
+      }
+      .conn-badge .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--muted);
+      }
+      .conn-badge.connected .dot {
+        background: var(--green);
+        animation: pulse 1.5s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 16px;
+        width: 100%;
+        max-width: 1000px;
+        margin-top: 16px;
+      }
+
+      @media (max-width: 700px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        header h1 {
+          font-size: 1.8rem;
+        }
+      }
+
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+      }
+
+      .panel-title {
+        font-family: "Syne", sans-serif;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 14px;
+      }
+
+      /* SETUP */
+      #setup-panel input {
+        width: 100%;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-family: "Space Mono", monospace;
+        font-size: 0.9rem;
+        padding: 10px 14px;
+        margin-bottom: 10px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      #setup-panel input:focus {
+        border-color: var(--accent);
+      }
+
+      .btn {
+        display: block;
+        width: 100%;
+        padding: 11px;
+        border-radius: 8px;
+        border: none;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition:
+          opacity 0.2s,
+          transform 0.1s;
+      }
+      .btn:active {
+        transform: scale(0.97);
+      }
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #0d0f14;
+      }
+      .btn-danger {
+        background: var(--accent2);
+        color: #fff;
+        margin-top: 8px;
+      }
+      .btn-success {
+        background: var(--green);
+        color: #0d0f14;
+      }
+      .btn-ghost {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+        margin-top: 8px;
+      }
+
+      /* PLAYERS */
+      .player-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .player-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: var(--surface2);
+        transition: background 0.2s;
+      }
+      .player-item.active-turn {
+        background: rgba(245, 197, 66, 0.12);
+        border: 1px solid rgba(245, 197, 66, 0.3);
+      }
+      .player-item.eliminated {
+        opacity: 0.4;
+        text-decoration: line-through;
+      }
+      .player-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #0d0f14;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 0.8rem;
+        flex-shrink: 0;
+      }
+      .player-name {
+        font-size: 0.82rem;
+        flex: 1;
+      }
+      .player-score {
+        font-size: 0.75rem;
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .player-crown {
+        font-size: 0.85rem;
+        margin-left: 2px;
+      }
+
+      /* MAIN GAME AREA */
+      #main-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      /* Current word display */
+      .word-display {
+        text-align: center;
+        padding: 28px 20px;
+        background: var(--surface2);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        position: relative;
+        overflow: hidden;
+      }
+      .word-display::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+      }
+      .word-label {
+        font-size: 0.72rem;
+        color: var(--muted);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+      .current-word {
+        font-family: "Syne", sans-serif;
+        font-size: 3rem;
+        font-weight: 800;
+        color: var(--accent);
+        letter-spacing: 4px;
+        margin: 8px 0 4px;
+        min-height: 60px;
+        transition: all 0.3s;
+      }
+      .next-hint {
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+      .next-hint strong {
+        color: var(--blue);
+      }
+
+      /* Turn info */
+      .turn-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-radius: 8px;
+        background: var(--surface2);
+      }
+      .turn-label {
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+      .turn-player {
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        color: var(--green);
+      }
+      .turn-player.is-me {
+        color: var(--accent);
+      }
+
+      /* Timer */
+      .timer-bar-wrap {
+        height: 6px;
+        background: var(--border);
+        border-radius: 99px;
+        overflow: hidden;
+      }
+      .timer-bar {
+        height: 100%;
+        background: var(--green);
+        border-radius: 99px;
+        transition:
+          width 1s linear,
+          background 0.5s;
+      }
+      .timer-bar.warning {
+        background: var(--accent);
+      }
+      .timer-bar.danger {
+        background: var(--accent2);
+      }
+      .timer-text {
+        font-size: 0.72rem;
+        color: var(--muted);
+        text-align: right;
+        margin-top: 4px;
+      }
+
+      /* Input zone */
+      .input-row {
+        display: flex;
+        gap: 10px;
+      }
+      .input-row input {
+        flex: 1;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-family: "Space Mono", monospace;
+        font-size: 1.1rem;
+        padding: 12px 16px;
+        outline: none;
+        text-transform: lowercase;
+        transition: border-color 0.2s;
+      }
+      .input-row input:focus {
+        border-color: var(--accent);
+      }
+      .input-row input:disabled {
+        opacity: 0.35;
+      }
+      .input-row .btn {
+        width: auto;
+        padding: 12px 20px;
+        font-size: 0.85rem;
+      }
+
+      /* Log */
+      #log {
+        background: var(--surface2);
+        border-radius: 8px;
+        padding: 12px;
+        height: 160px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .log-entry {
+        font-size: 0.75rem;
+        padding: 3px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        color: var(--muted);
+      }
+      .log-entry .tag {
+        display: inline-block;
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        margin-right: 6px;
+      }
+      .tag-accept {
+        background: rgba(78, 203, 113, 0.15);
+        color: var(--green);
+      }
+      .tag-reject {
+        background: rgba(255, 107, 107, 0.15);
+        color: var(--accent2);
+      }
+      .tag-info {
+        background: rgba(91, 156, 246, 0.15);
+        color: var(--blue);
+      }
+      .tag-warn {
+        background: rgba(245, 197, 66, 0.15);
+        color: var(--accent);
+      }
+      .tag-system {
+        background: rgba(122, 132, 148, 0.15);
+        color: var(--muted);
+      }
+
+      /* Used words cloud */
+      .word-cloud {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        max-height: 100px;
+        overflow-y: auto;
+      }
+      .word-chip {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 99px;
+        padding: 3px 10px;
+        font-size: 0.72rem;
+        color: var(--muted);
+      }
+
+      /* Overlays */
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.75);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+      }
+      .overlay.show {
+        opacity: 1;
+        pointer-events: all;
+      }
+      .overlay-box {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 40px;
+        text-align: center;
+        max-width: 420px;
+        width: 90%;
+        transform: scale(0.9);
+        transition: transform 0.3s;
+      }
+      .overlay.show .overlay-box {
+        transform: scale(1);
+      }
+      .overlay-box h2 {
+        font-family: "Syne", sans-serif;
+        font-size: 1.8rem;
+        font-weight: 800;
+        margin-bottom: 10px;
+      }
+      .overlay-box p {
+        color: var(--muted);
+        font-size: 0.82rem;
+        margin-bottom: 20px;
+      }
+      .leaderboard {
+        margin: 16px 0;
+      }
+      .lb-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: var(--surface2);
+        margin-bottom: 6px;
+      }
+      .lb-rank {
+        font-size: 0.85rem;
+        width: 24px;
+        text-align: center;
+        color: var(--muted);
+      }
+      .lb-name {
+        flex: 1;
+        font-size: 0.82rem;
+      }
+      .lb-score {
+        color: var(--accent);
+        font-weight: 700;
+        font-size: 0.82rem;
+      }
+      .winner-crown {
+        font-size: 3rem;
+        margin-bottom: 8px;
+      }
+
+      #notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px 18px;
+        font-size: 0.82rem;
+        max-width: 300px;
+        z-index: 200;
+        transform: translateX(120%);
+        transition: transform 0.3s;
+      }
+      #notification.show {
+        transform: translateX(0);
+      }
+      #notification.ok {
+        border-color: var(--green);
+        color: var(--green);
+      }
+      #notification.err {
+        border-color: var(--accent2);
+        color: var(--accent2);
+      }
+      #notification.warn {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .empty-state {
+        color: var(--muted);
+        font-size: 0.78rem;
+        text-align: center;
+        padding: 16px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Sambung <span>Kata</span></h1>
+      <p>Game Real-Time via WebSocket • Praktikum 7</p>
+      <div class="conn-badge" id="conn-badge">
+        <span class="dot"></span>
+        <span id="conn-text">Menghubungkan...</span>
+      </div>
+    </header>
+
+    <!-- SETUP PANEL (hidden after join) -->
+    <div id="setup-overlay" class="overlay show">
+      <div class="overlay-box">
+        <h2>Masuk <span style="color: var(--accent)">Sesi</span></h2>
+        <p>Masukkan username untuk bergabung ke game Sambung Kata</p>
+        <input
+          type="text"
+          id="username-input"
+          placeholder="Username kamu..."
+          maxlength="16"
+          style="
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: &quot;Space Mono&quot;, monospace;
+            font-size: 1rem;
+            padding: 12px 14px;
+            outline: none;
+            margin-bottom: 12px;
+          "
+        />
+        <button class="btn btn-primary" onclick="joinGame()">Masuk →</button>
+      </div>
+    </div>
+
+    <!-- GAME OVER OVERLAY -->
+    <div id="gameover-overlay" class="overlay">
+      <div class="overlay-box">
+        <div class="winner-crown">🏆</div>
+        <h2 id="go-title">Game Over</h2>
+        <p id="go-subtitle">Pemenang: <strong id="go-winner"></strong></p>
+        <div class="leaderboard" id="go-leaderboard"></div>
+        <button class="btn btn-primary" onclick="sendReset()">Main Lagi</button>
+      </div>
+    </div>
+
+    <!-- NOTIFICATION TOAST -->
+    <div id="notification"></div>
+
+    <!-- MAIN LAYOUT -->
+    <div class="layout">
+      <!-- LEFT: Players + Controls -->
+      <div>
+        <div class="panel" id="setup-panel" style="margin-bottom: 14px">
+          <div class="panel-title">Kontrol Host</div>
+          <button
+            class="btn btn-success"
+            id="start-btn"
+            onclick="startGame()"
+            disabled
+          >
+            ▶ Mulai Game
+          </button>
+          <button class="btn btn-ghost" onclick="sendReset()">↺ Reset</button>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">
+            Pemain (<span id="player-count">0</span>)
+          </div>
+          <div class="player-list" id="player-list">
+            <div class="empty-state">Belum ada pemain</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Game -->
+      <div id="main-panel">
+        <div class="panel">
+          <div class="panel-title">Giliran & Timer</div>
+          <div class="turn-info">
+            <div>
+              <div class="turn-label">Giliran</div>
+              <div class="turn-player" id="turn-display">—</div>
+            </div>
+            <div style="text-align: right">
+              <div class="turn-label">Ronde</div>
+              <div
+                style="
+                  font-family: &quot;Syne&quot;, sans-serif;
+                  font-weight: 700;
+                "
+                id="round-display"
+              >
+                —
+              </div>
+            </div>
+          </div>
+          <div style="margin-top: 12px">
+            <div class="timer-bar-wrap">
+              <div class="timer-bar" id="timer-bar" style="width: 100%"></div>
+            </div>
+            <div class="timer-text" id="timer-text">—</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Kata Saat Ini</div>
+          <div class="word-display">
+            <div class="word-label">Kata Terakhir</div>
+            <div class="current-word" id="current-word">???</div>
+            <div class="next-hint" id="next-hint">Menunggu game dimulai...</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Input Kata</div>
+          <div class="input-row">
+            <input
+              type="text"
+              id="word-input"
+              placeholder="Ketik kata kamu..."
+              disabled
+              maxlength="30"
+              onkeydown="if (event.key === 'Enter') submitWord();"
+            />
+            <button
+              class="btn btn-primary"
+              id="submit-btn"
+              onclick="submitWord()"
+              disabled
+            >
+              Kirim
+            </button>
+          </div>
+          <div
+            style="font-size: 0.72rem; color: var(--muted); margin-top: 8px"
+            id="input-hint"
+          >
+            Tunggu giliran kamu
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Log Kejadian</div>
+          <div id="log"><div class="empty-state">Log kosong</div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">
+            Kata Sudah Dipakai (<span id="used-count">0</span>)
+          </div>
+          <div class="word-cloud" id="word-cloud">
+            <div class="empty-state">Belum ada kata</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ─── WebSocket Setup ───────────────────────────────────────
+      const WS_URL = `ws://${location.host}/ws`;
+      let ws;
+      let myUsername = null;
+      let myTurn = false;
+      let timerInterval = null;
+      let timerLeft = 15;
+      let timerMax = 15;
+
+      function connect() {
+        ws = new WebSocket(WS_URL);
+
+        ws.onopen = () => {
+          setConnected(true);
+        };
+
+        ws.onclose = () => {
+          setConnected(false);
+          setTimeout(connect, 3000);
+        };
+
+        ws.onerror = () => setConnected(false);
+
+        ws.onmessage = (event) => {
+          let data;
+          try {
+            data = JSON.parse(event.data);
+          } catch {
+            return;
+          }
+          handleMessage(data);
+        };
+      }
+
+      function setConnected(ok) {
+        const badge = document.getElementById("conn-badge");
+        const text = document.getElementById("conn-text");
+        if (ok) {
+          badge.classList.add("connected");
+          text.textContent = "Terhubung";
+        } else {
+          badge.classList.remove("connected");
+          text.textContent = "Terputus — menghubungkan ulang...";
+        }
+      }
+
+      function send(obj) {
+        if (ws && ws.readyState === WebSocket.OPEN)
+          ws.send(JSON.stringify(obj));
+      }
+
+      // ─── Join ──────────────────────────────────────────────────
+      function joinGame() {
+        const input = document.getElementById("username-input");
+        const name = input.value.trim();
+        if (!name) {
+          notify("Isi username dulu!", "err");
+          return;
+        }
+        myUsername = name;
+        send({ type: "JOIN", username: name });
+        document.getElementById("setup-overlay").classList.remove("show");
+      }
+
+      function startGame() {
+        send({ type: "START_GAME" });
+      }
+      function sendReset() {
+        send({ type: "RESET_GAME" });
+        document.getElementById("gameover-overlay").classList.remove("show");
+      }
+      function submitWord() {
+        const inp = document.getElementById("word-input");
+        const w = inp.value.trim().toLowerCase();
+        if (!w) return;
+        send({ type: "SUBMIT_WORD", word: w });
+        inp.value = "";
+      }
+
+      // ─── Message Handler ───────────────────────────────────────
+      function handleMessage(data) {
+        switch (data.type) {
+          case "WELCOME":
+            log("info", `Selamat datang, ${data.username}!`);
+            break;
+
+          case "PLAYER_JOINED":
+            log("info", `${data.username} bergabung`);
+            break;
+
+          case "PLAYER_LEFT":
+            log("warn", `${data.username} keluar`);
+            break;
+
+          case "GAME_STATE":
+            updateGameState(data.state);
+            break;
+
+          case "GAME_STARTED":
+            log("system", "🚀 Game dimulai!");
+            notify("Game dimulai! Bersiaplah...", "ok");
+            break;
+
+          case "YOUR_TURN":
+            startTimer(data.timeLimit || 15);
+            const turnEl = document.getElementById("turn-display");
+            const isMe = data.username === myUsername;
+            turnEl.textContent = isMe
+              ? `${data.username} (Kamu!)`
+              : data.username;
+            turnEl.className = "turn-player" + (isMe ? " is-me" : "");
+
+            if (data.lastWord) {
+              document.getElementById("current-word").textContent =
+                data.lastWord.toUpperCase();
+              document.getElementById("next-hint").innerHTML =
+                `Kata berikutnya harus diawali huruf: <strong>${data.mustStartWith.toUpperCase()}</strong>`;
+            } else {
+              document.getElementById("current-word").textContent = "???";
+              document.getElementById("next-hint").textContent =
+                "Kamu bebas mulai dengan kata apa saja!";
+            }
+
+            myTurn = isMe;
+            setInputEnabled(isMe);
+            if (isMe) {
+              notify("Giliran kamu!", "warn");
+              document.getElementById("word-input").focus();
+            }
+            break;
+
+          case "WORD_ACCEPTED":
+            log(
+              "accept",
+              `✓ ${data.username}: "${data.word}" (+${data.points} poin)`,
+            );
+            document.getElementById("current-word").textContent =
+              data.word.toUpperCase();
+            document.getElementById("next-hint").innerHTML =
+              `Kata berikutnya harus diawali huruf: <strong>${data.nextChar.toUpperCase()}</strong>`;
+            notify(`"${data.word}" diterima!`, "ok");
+            stopTimer();
+            break;
+
+          case "WORD_REJECTED":
+            log("reject", `✗ ${data.reason}`);
+            notify(data.reason, "err");
+            break;
+
+          case "PLAYER_TIMEOUT":
+            log("warn", `⏰ ${data.username} kehabisan waktu dan dieliminasi!`);
+            notify(`${data.username} tereliminasi!`, "warn");
+            stopTimer();
+            break;
+
+          case "GAME_OVER":
+            stopTimer();
+            showGameOver(data);
+            log("system", `🏁 Game selesai! Pemenang: ${data.winner}`);
+            break;
+
+          case "GAME_RESET":
+            log("system", "↺ Game direset");
+            document.getElementById("current-word").textContent = "???";
+            document.getElementById("next-hint").textContent =
+              "Menunggu game dimulai...";
+            document.getElementById("word-cloud").innerHTML =
+              '<div class="empty-state">Belum ada kata</div>';
+            document.getElementById("used-count").textContent = "0";
+            document.getElementById("turn-display").textContent = "—";
+            document.getElementById("round-display").textContent = "—";
+            setInputEnabled(false);
+            stopTimer();
+            break;
+
+          case "ERROR":
+            notify(data.message, "err");
+            break;
+        }
+      }
+
+      // ─── State Update ──────────────────────────────────────────
+      function updateGameState(state) {
+        // Players
+        const playerList = document.getElementById("player-list");
+        const playerCount = document.getElementById("player-count");
+        playerCount.textContent = state.players.length;
+
+        const startBtn = document.getElementById("start-btn");
+        startBtn.disabled =
+          state.status !== "waiting" || state.players.length < 2;
+
+        if (state.players.length === 0) {
+          playerList.innerHTML =
+            '<div class="empty-state">Belum ada pemain</div>';
+        } else {
+          playerList.innerHTML = state.players
+            .map((p) => {
+              const isActive = p.username === state.currentTurn;
+              const cls = [
+                "player-item",
+                isActive ? "active-turn" : "",
+                !p.isAlive ? "eliminated" : "",
+              ].join(" ");
+              const avatarLetter = p.username.charAt(0).toUpperCase();
+              return `<div class="${cls}">
+        <div class="player-avatar">${avatarLetter}</div>
+        <div class="player-name">${p.username}${!p.isAlive ? " ☠️" : ""}</div>
+        <div class="player-score">${p.score} pt</div>
+      </div>`;
+            })
+            .join("");
+        }
+
+        // Word cloud
+        const cloud = document.getElementById("word-cloud");
+        const usedCount = document.getElementById("used-count");
+        usedCount.textContent = state.usedWords.length;
+        if (state.usedWords.length === 0) {
+          cloud.innerHTML = '<div class="empty-state">Belum ada kata</div>';
+        } else {
+          cloud.innerHTML = state.usedWords
+            .slice()
+            .reverse()
+            .map((w) => `<span class="word-chip">${w}</span>`)
+            .join("");
+        }
+
+        // Round
+        if (state.round)
+          document.getElementById("round-display").textContent =
+            `#${state.round}`;
+      }
+
+      // ─── Timer ─────────────────────────────────────────────────
+      function startTimer(seconds) {
+        stopTimer();
+        timerMax = seconds;
+        timerLeft = seconds;
+        updateTimerUI();
+        timerInterval = setInterval(() => {
+          timerLeft = Math.max(0, timerLeft - 1);
+          updateTimerUI();
+          if (timerLeft === 0) stopTimer();
+        }, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+
+      function updateTimerUI() {
+        const pct = (timerLeft / timerMax) * 100;
+        const bar = document.getElementById("timer-bar");
+        bar.style.width = pct + "%";
+        bar.className =
+          "timer-bar" + (pct < 30 ? " danger" : pct < 60 ? " warning" : "");
+        document.getElementById("timer-text").textContent =
+          `${timerLeft}s tersisa`;
+      }
+
+      // ─── Input Enable ──────────────────────────────────────────
+      function setInputEnabled(enabled) {
+        document.getElementById("word-input").disabled = !enabled;
+        document.getElementById("submit-btn").disabled = !enabled;
+        document.getElementById("input-hint").textContent = enabled
+          ? "Ketik kata dan tekan Enter atau Kirim"
+          : "Tunggu giliran kamu";
+      }
+
+      // ─── Game Over ────────────────────────────────────────────
+      function showGameOver(data) {
+        document.getElementById("go-title").textContent = "🏆 Game Selesai!";
+        document.getElementById("go-winner").textContent = data.winner;
+        const lb = document.getElementById("go-leaderboard");
+        lb.innerHTML = data.leaderboard
+          .map(
+            (p, i) => `
+    <div class="lb-row">
+      <div class="lb-rank">${["🥇", "🥈", "🥉"][i] || i + 1}</div>
+      <div class="lb-name">${p.username}</div>
+      <div class="lb-score">${p.score} pt</div>
+    </div>
+  `,
+          )
+          .join("");
+        document.getElementById("gameover-overlay").classList.add("show");
+        setInputEnabled(false);
+        stopTimer();
+      }
+
+      // ─── Log ──────────────────────────────────────────────────
+      function log(type, msg) {
+        const logEl = document.getElementById("log");
+        const emptyEl = logEl.querySelector(".empty-state");
+        if (emptyEl) emptyEl.remove();
+
+        const entry = document.createElement("div");
+        entry.className = "log-entry";
+        const tagMap = {
+          accept: "tag-accept",
+          reject: "tag-reject",
+          info: "tag-info",
+          warn: "tag-warn",
+          system: "tag-system",
+        };
+        const labelMap = {
+          accept: "OK",
+          reject: "REJECT",
+          info: "INFO",
+          warn: "WARN",
+          system: "SYS",
+        };
+        entry.innerHTML = `<span class="tag ${tagMap[type] || "tag-system"}">${labelMap[type] || type.toUpperCase()}</span>${msg}`;
+        logEl.appendChild(entry);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      // ─── Notification ─────────────────────────────────────────
+      let notifTimeout;
+      function notify(msg, type = "ok") {
+        const el = document.getElementById("notification");
+        el.textContent = msg;
+        el.className = `show ${type}`;
+        clearTimeout(notifTimeout);
+        notifTimeout = setTimeout(() => {
+          el.classList.remove("show");
+        }, 3000);
+      }
+
+      // ─── Username input enter ──────────────────────────────────
+      document
+        .getElementById("username-input")
+        .addEventListener("keydown", (e) => {
+          if (e.key === "Enter") joinGame();
+        });
+
+      // ─── Init ──────────────────────────────────────────────────
+      connect();
+    </script>
+  </body>
+</html>

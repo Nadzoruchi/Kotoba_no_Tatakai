@@ -1,0 +1,21 @@
+{
+  "name": "sambung-kata-websocket",
+  "version": "1.0.0",
+  "description": "Game Sambung Kata Real-Time menggunakan WebSocket & Hono — Praktikum 7",
+  "type": "module",
+  "scripts": {
+    "start": "bun run ./src/index.js",
+    "dev": "bun --hot run ./src/index.js",
+    "test": "jest --testPathPattern=sambung-kata.test.js"
+  },
+  "dependencies": {
+    "hono": "^4.12.16"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {}
+  }
+}
