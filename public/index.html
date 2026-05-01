@@ -706,7 +706,8 @@
 
     <script>
       // ─── WebSocket Setup ───────────────────────────────────────
-      const WS_URL = `ws://${location.host}/ws`;
+      const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+      const WS_URL = `${protocol}://${location.host}/ws`;
       let ws;
       let myUsername = null;
       let myTurn = false;
